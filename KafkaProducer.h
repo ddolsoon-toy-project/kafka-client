@@ -11,6 +11,7 @@
 #include "ProducerCallback.h"
 #include "ProducerEventCallback.h"
 #include "kafka/rdkafkacpp.h"
+#include "KafkaMessage.h"
 
 #include <vector>
 #include <map>
@@ -62,6 +63,8 @@ class KafkaProducer
 		std::string getTopic() const;
 		void setTopic(const std::string& topic);
 
+		bool send(const KafkaMessage& message);
+
 		std::string _strBrokers;
 		std::string _strUserAgent;
 		std::string _strTopic;
@@ -79,6 +82,13 @@ class KafkaProducer
 		// Producer Configuration Setter
 		bool _setProducerConfiguration(const std::map<std::string, std::string>& producerConfigurationMap,
 				ProducerISendCallback* const producerCallback);
+
+		// create Kafka Header
+		bool _createKafkaHeader(RdKafka::Headers* headers, const KafkaMessage& message,
+				const std::string& userAgent, std::string& messageId);
+
+		// create random uuid
+		std::string _getRandomUUID() const;
 
 		// EventPolling Thread
 		static void* eventPollingThread(void* const pTimeOut);

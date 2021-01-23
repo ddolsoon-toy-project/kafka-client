@@ -8,6 +8,7 @@ LDSO=$(CXX) -shared -rdynamic -fPIC
 
 SRCS=./KafkaMessage.cpp \
 	 ./KafkaProducer.cpp \
+	 ./KafkaConsumer.cpp \
 	 ./ProducerCallback.cpp \
 	 ./ProducerDefaultSendCallback.cpp \
 	 ./ProducerEventCallback.cpp
@@ -40,6 +41,7 @@ libKafkaClient.so: $(OBJS)
 	@printf "\033[0;40;33m ****** Build $@ Complete    ****** \033[0m\n";
 	@cp KafkaMessage.h examples/include
 	@cp KafkaProducer.h examples/include
+	@cp KafkaConsumer.h examples/include
 	@cp ProducerCallback.h examples/include
 	@cp ProducerEventCallback.h examples/include
 	@cp ProducerDefaultSendCallback.h examples/include

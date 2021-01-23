@@ -10,6 +10,7 @@
 
 #include <iostream>
 #include <vector>
+#include <map>
 #include <cstdio>
 #include <cstring>
 
@@ -38,11 +39,6 @@ class KafkaMessage
 		 */
 		std::string _strContents;
 
-		/**
-		 * @brief 전송한 프로듀서
-		 */
-		std::string _strUserAgent;
-
 	public:
 		static const int MIN_VERSION = 1;
 
@@ -67,9 +63,44 @@ class KafkaMessage
 
 		std::string getContents() const;
 		void setContents(std::string strContents);
+};
 
-		std::string getUserAgent() const;
-		void setUserAgent(std::string strUserAgent);
+class ReceivedMessage
+{
+	private:
+		/**
+		 * @brief 전송받은 메세지의 순서보장의 기준이 되는 key
+		 */
+		std::string _strKey;
+
+		/**
+		 * @brief 전송받은 메시지의 headers
+		 */
+		std::map<std::string, std::string> _headers;
+
+		/**
+		 * @brief 전송할 메세지의 body
+		 */
+		std::string _strBody;
+
+	public:
+		ReceivedMessage()
+		{
+		}
+		~ReceivedMessage()
+		{
+		}
+
+		std::string getKey() const;
+		void setKey(std::string strKey);
+
+		std::map<std::string, std::string> getHeaders() const;
+		void setHeaders(std::map<std::string, std::string> headers);
+
+		std::string getBody() const;
+		void setBody(std::string strBody);
+
+
 };
 
 

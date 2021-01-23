@@ -50,14 +50,33 @@ void KafkaMessage::setContents(std::string strContents)
 	_strContents = strContents;
 }
 
-std::string KafkaMessage::getUserAgent() const
+std::string ReceivedMessage::getKey() const
 {
-	return _strUserAgent;
+	return _strKey;
 }
 
-void KafkaMessage::setUserAgent(std::string strUserAgent)
+void ReceivedMessage::setKey(std::string strKey)
 {
-	_strUserAgent = strUserAgent;
+	_strKey = strKey;
 }
 
+std::map<std::string, std::string> ReceivedMessage::getHeaders() const
+{
+	return _headers;
+}
+
+void ReceivedMessage::setHeaders(std::map<std::string, std::string> headers)
+{
+	_headers = headers;
+}
+
+std::string ReceivedMessage::getBody() const
+{
+	return _strBody;
+}
+
+void ReceivedMessage::setBody(std::string strBody)
+{
+	_strBody = strBody;
+}
 

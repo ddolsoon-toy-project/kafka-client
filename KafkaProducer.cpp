@@ -3,6 +3,8 @@
 #include <iostream>
 #include <algorithm>
 #include <cstdio>
+#include <unistd.h>
+#include <sys/time.h>
 
 bool KafkaProducer::_setProducerConfiguration(const std::map<std::string, std::string>& producerConfigurationMap,
 	ProducerISendCallback* const producerCallback)
@@ -179,6 +181,42 @@ void KafkaProducer::setDebugMode(const bool& isDebugMode)
 	this->isDebugMode = isDebugMode;
 }
 
+bool KafkaProducer::send(const KafkaMessage& message)
+{
+	// Kafka Message Header 생성
+	RdKafka::Headers * headers = RdKafka::Headers::create();
+
+	std::string messageId;
+	if ( false == _createKafkaHeader(headers, message, _strUserAgent, messageId) )
+	{
+		fprintf(stderr, "[ERR][%s][MESSAGE HEADER ERROR][MESSAGE VALUE IS INVALID]\n", getNowTimeString().c_str());
+		delete headers;
+		return false;
+	}
+
+	// Kafka Message 전송
+	RdKafka::ErrorCode errorCode = producer->produce(_strTopic, RdKafka::Topic::PARTITION_UA, RdKafka::Producer::RK_MSG_COPY,
+					const_cast<char *>(message.getContents().c_str()), message.getContents().size(),
+					const_cast<char *>(message.getKey().c_str()), message.getKey().size(),
+					(long)0,
+					headers,
+					NULL);
+
+	if ( errorCode != RdKafka::ERR_NO_ERROR )
+	{
+		fprintf(stderr, "[FAIL][%s][KAFKA][MESSAGE ID][%s][[Produce Message Failed][topic:%s]\n", 
+				getNowTimeString().c_str(), messageId.c_str(), _strTopic.c_str());
+		delete headers;
+		return false;
+	}
+	else
+	{
+		fprintf(stderr, "[SUCCESS][%s][KAFKA][MESSAGE ID][%s][Produce Message Success][topic:%s]\n", 
+				getNowTimeString().c_str(), messageId.c_str(), _strTopic.c_str());
+	}
+
+	return true;
+}
 
 // 현재시간 std::string으로 출력
 std::string KafkaProducer::getNowTimeString() const
@@ -222,3 +260,84 @@ void EventPoll::eventPoll() const
 
 }
 
+void KafkaProducer::setTopic(const std::string& topic)
+{
+	_strTopic = topic;
+}
+
+std::string KafkaProducer::getTopic() const
+{
+	return _strTopic;
+}
+
+bool KafkaProducer::_createKafkaHeader(RdKafka::Headers* headers, const KafkaMessage& message,
+		const std::string& userAgent, std::string& messageId)
+{
+	// ms 단위 timestamp 측정
+	struct timeval te;
+	gettimeofday(&te, NULL);
+	long long int timestamp = te.tv_sec * 1000LL + te.tv_usec/1000;
+
+	// x-message-id
+	std::string strMessageId = _getRandomUUID(); 
+	headers->add(HEADERS_MESSAGE_ID, strMessageId);
+	messageId = strMessageId;
+
+	// x-timestamp
+	char strTimestamp[20];
+	sprintf(strTimestamp, "%lld", timestamp);
+	headers->add(HEADERS_TIMESTAMP, strTimestamp);	// x-timestamp
+
+	// x-command
+	headers->add(HEADERS_COMMAND, message.getCommand());
+
+	// x-message-version
+	char strMsgVersion[5];
+	sprintf(strMsgVersion, "%d", message.getVersion());
+	headers->add(HEADERS_MESSAGE_VERSION, strMsgVersion);
+
+	// x-content-type
+	headers->add(HEADERS_CONTENT_TYPE, message.getContentType());	
+
+	// x-user-agent
+	headers->add(HEADERS_USER_AGENT, userAgent);
+	
+	return true;
+}
+
+std::string KafkaProducer::_getRandomUUID() const
+{
+	struct timeval time;
+	gettimeofday(&time,NULL);
+	unsigned int seed = (time.tv_sec * 1000000) + (time.tv_usec);
+
+	char UUID[40];
+	char szTemp[40] = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx";
+	char szHex[18] = "0123456789ABCDEF-";
+	int nLen = strlen (szTemp);
+
+	for ( int i = 0; i < nLen + 1; i++ )
+	{
+        int nRandomIdx = rand_r(&seed) % 16;
+		char c = ' ';
+
+		switch (szTemp[i])
+		{
+			case 'x' :
+				c = szHex [nRandomIdx];
+				break;
+			case 'y' :
+				c = szHex [nRandomIdx & (0x03 | 0x08)];
+				break;
+			case '-' :
+				c = '-';
+				break;
+			case '4' :
+				c = '4';
+				break;
+		}
+		UUID[i] = ( i < nLen ) ? c : 0x00;
+	}
+
+	return std::string(UUID);
+}
